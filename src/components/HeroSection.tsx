@@ -133,7 +133,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY }) => {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 px-4 max-w-7xl mx-auto flex flex-col-reverse md:flex-row items-center justify-between gap-12 md:gap-32">
+      <div className="relative z-10 px-4 max-w-7xl mx-auto flex flex-col-reverse md:flex-row items-center justify-between gap-12 md:gap-32 pb-20">
         {/* Profile Photo with 3D Effect */}
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
@@ -294,7 +294,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 1 }}
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
+          className="absolute bottom-4 left-1/2 transform -translate-x-1/2 hidden md:block"
         >
           <motion.div
             animate={{ y: [0, 8, 0] }}
