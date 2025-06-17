@@ -2,6 +2,128 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom Cursor - Trench Inspired - COMPLETE OVERRIDE */
+*, *::before, *::after {
+  cursor: none !important;
+}
+
+/* Force override for ALL interactive elements */
+a, button, input, textarea, select, option, label, form,
+[role="button"], [role="link"], [role="menuitem"], [role="tab"],
+[tabindex], [onclick], [onmousedown], [onmouseup], [onmouseover],
+.cursor-hover, .clickable, .btn, .button, .link, .nav-link, .menu-item,
+a *, button *, input *, textarea *, select *, [role="button"] *,
+div[onclick], span[onclick], p[onclick], img[onclick], svg[onclick], path,
+[data-testid], [data-cy], [aria-label], [title],
+.cursor-pointer, .pointer, [style*="cursor"],
+*:hover, *:focus, *:active, *:visited {
+  cursor: none !important;
+}
+
+/* Override Tailwind and other framework cursors */
+.cursor-auto, .cursor-default, .cursor-pointer, .cursor-wait, .cursor-text,
+.cursor-move, .cursor-help, .cursor-not-allowed, .cursor-grab, .cursor-grabbing,
+.cursor-crosshair, .cursor-zoom-in, .cursor-zoom-out {
+  cursor: none !important;
+}
+
+/* Nuclear option - override everything */
+html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code, del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary, time, mark, audio, video, button, input, select, textarea {
+  cursor: none !important;
+}
+
+/* Hide custom cursor on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  * {
+    cursor: auto;
+  }
+  
+  .custom-cursor,
+  .cursor-follower {
+    display: none;
+  }
+}
+
+/* Main cursor dot */
+.custom-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  background: #ffdb00;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10001;
+  transform: translate(-50%, -50%);
+  transition: width 0.2s ease-out, height 0.2s ease-out, background-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  box-shadow: 0 0 8px rgba(255, 219, 0, 0.6);
+  will-change: left, top;
+}
+
+/* Cursor follower ring */
+.cursor-follower {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  border: 2px solid rgba(255, 219, 0, 0.4);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10000;
+  transform: translate(-50%, -50%);
+  transition: width 0.2s ease-out, height 0.2s ease-out, border-color 0.2s ease-out, border-width 0.2s ease-out;
+  will-change: left, top;
+}
+
+/* Hover states */
+.custom-cursor.hover {
+  width: 12px;
+  height: 12px;
+  background: #ff8c00;
+  box-shadow: 0 0 12px rgba(255, 140, 0, 0.8);
+}
+
+.cursor-follower.hover {
+  width: 48px;
+  height: 48px;
+  border-color: rgba(255, 140, 0, 0.6);
+  border-width: 3px;
+}
+
+/* Click states */
+.custom-cursor.click {
+  width: 6px;
+  height: 6px;
+  background: #ff6b00;
+}
+
+.cursor-follower.click {
+  width: 24px;
+  height: 24px;
+  border-color: rgba(255, 107, 0, 0.8);
+}
+
+/* Text hover states */
+.custom-cursor.text {
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 219, 0, 0.8);
+}
+
+.cursor-follower.text {
+  width: 64px;
+  height: 64px;
+  border-color: rgba(255, 219, 0, 0.2);
+  border-width: 1px;
+}
+
 html,
 body {
   padding: 0;
@@ -27,4 +149,21 @@ a {
     color: white;
     background: black;
   }
+}
+
+/* Final override - this should be the last rule to ensure it takes precedence */
+* {
+  cursor: none !important;
+}
+
+*:hover {
+  cursor: none !important;
+}
+
+*:focus {
+  cursor: none !important;
+}
+
+*:active {
+  cursor: none !important;
 }
