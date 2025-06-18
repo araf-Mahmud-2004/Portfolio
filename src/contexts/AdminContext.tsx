@@ -20,8 +20,8 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   const { user, signIn, signOut } = useAuth();
   const [isAdminMode, setIsAdminMode] = useState(false);
 
-  // Check if admin features should be shown based on environment variable
-  const showAdminButton = import.meta.env.VITE_SHOW_ADMIN === 'true';
+  // Settings button should always be visible regardless of environment variable
+  const showAdminButton = true;
 
   // User is authenticated if they have a valid Supabase session
   const isAuthenticated = !!user;
