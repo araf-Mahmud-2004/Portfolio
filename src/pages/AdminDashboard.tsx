@@ -14,10 +14,13 @@ import {
   Code,
   Calendar,
   Star,
-  Award
+  Award,
+  ExternalLink
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import ProfileWithSocialLinks from '../components/admin/ProfileWithSocialLinks';
+import SocialLinksManager from '../components/admin/SocialLinksManager';
 
 interface Skill {
   id: string;
@@ -41,7 +44,7 @@ interface Project {
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'skills' | 'profile' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'skills' | 'profile' | 'social' | 'settings'>('overview');
   const [isAddingProject, setIsAddingProject] = useState(false);
   const [isAddingSkill, setIsAddingSkill] = useState(false);
   const [editingProject, setEditingProject] = useState<number | null>(null);
@@ -80,6 +83,8 @@ const AdminDashboard: React.FC = () => {
     linkedinUrl: '',
     profilePictureUrl: ''
   });
+
+  const [resumeStatus, setResumeStatus] = useState<string>('');
 
   const skillCategories = [
     'Frontend Development',
@@ -486,11 +491,103 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleResumeUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      setResumeStatus('Uploading resume...');
+
+      // Validate file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('File size must be less than 10MB');
+      }
+
+      // Validate file type
+      const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error('Only PDF, DOC, and DOCX files are allowed');
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("User not found, can't upload resume.");
+      }
+
+      // Use a consistent filename for the resume
+      const fileExt = file.name.split('.').pop();
+      const fileName = `resume.${fileExt}`;
+
+      // Upload the file to the 'resume' bucket, overwriting if it exists
+      const { error: uploadError } = await supabase.storage
+        .from('resume')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      setResumeStatus('Resume uploaded successfully! Visitors can now download your resume.');
+
+      // Clear the status after 5 seconds
+      setTimeout(() => setResumeStatus(''), 5000);
+
+    } catch (error: any) {
+      console.error('Error uploading resume:', error);
+      setResumeStatus(`Failed to upload resume: ${error.message}`);
+      
+      // Clear error after 5 seconds
+      setTimeout(() => setResumeStatus(''), 5000);
+    }
+  };
+
+  const handleResumeDelete = async () => {
+    try {
+      if (!confirm('Are you sure you want to delete your resume? This action cannot be undone.')) {
+        return;
+      }
+
+      setResumeStatus('Deleting resume...');
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("User not found, can't delete resume.");
+      }
+
+      // Try to delete both PDF and DOC versions
+      const filesToDelete = ['resume.pdf', 'resume.doc', 'resume.docx'];
+      
+      for (const fileName of filesToDelete) {
+        const { error } = await supabase.storage
+          .from('resume')
+          .remove([fileName]);
+        
+        // Don't throw error if file doesn't exist
+        if (error && !error.message.includes('not found')) {
+          console.error(`Error deleting ${fileName}:`, error);
+        }
+      }
+
+      setResumeStatus('Resume deleted successfully.');
+
+      // Clear the status after 3 seconds
+      setTimeout(() => setResumeStatus(''), 3000);
+
+    } catch (error: any) {
+      console.error('Error deleting resume:', error);
+      setResumeStatus(`Failed to delete resume: ${error.message}`);
+      
+      // Clear error after 5 seconds
+      setTimeout(() => setResumeStatus(''), 5000);
+    }
+  };
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'projects', label: 'Projects', icon: Code },
     { id: 'skills', label: 'Skills', icon: Award },
     { id: 'profile', label: 'Profile', icon: User },
+    { id: 'social', label: 'Social Links', icon: ExternalLink },
     { id: 'settings', label: 'Settings', icon: Settings }
   ];
 
@@ -514,7 +611,7 @@ const AdminDashboard: React.FC = () => {
               type="text"
               value={project.title}
               onChange={(e) => setProjects(projects.map(p => p.id === project.id ? {...p, title: e.target.value} : p))}
-              className="w-full bg-olive/20 border border-olive/30 rounded-xl px-4 py-3 text-off-white focus:border-neon focus:ring-2 focus:ring-neon/20 outline-none"
+              className="w-full bg-olive/20 border border-olive/30 rounded-xl px-4 py-3 text-off-white focus:border-neon focus:ring-2 focus:ring-olive/30 outline-none"
               placeholder="Project Title"
             />
           </div>
@@ -1113,105 +1210,29 @@ const AdminDashboard: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.5 }}
-                  className="space-y-6"
                 >
-                  <div className="flex items-center justify-between">
-                    <h1 className="text-3xl font-bold text-off-white">Profile Settings</h1>
-                  </div>
+                  <ProfileWithSocialLinks
+                    profile={profile}
+                    setProfile={setProfile}
+                    handleProfileUpdate={handleProfileUpdate}
+                    handleProfilePictureUpload={handleProfilePictureUpload}
+                    handleResumeUpload={handleResumeUpload}
+                    handleResumeDelete={handleResumeDelete}
+                    resumeStatus={resumeStatus}
+                  />
+                </motion.div>
+              )}
 
-                  <div className="bg-charcoal/50 backdrop-blur-xl rounded-2xl border border-olive/30 p-6">
-                    <h3 className="text-xl font-bold text-off-white mb-6">Personal Information</h3>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-light-gray mb-2">Full Name</label>
-                        <input
-                          type="text"
-                          value={profile.fullName}
-                          onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
-                          className="w-full bg-olive/20 border border-olive/30 rounded-xl px-4 py-3 text-off-white focus:border-neon focus:ring-2 focus:ring-neon/20 outline-none"
-                          placeholder="Your Name"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-light-gray mb-2">Email Address</label>
-                        <input
-                          type="email"
-                          value={profile.email}
-                          onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                          className="w-full bg-olive/20 border border-olive/30 rounded-xl px-4 py-3 text-off-white focus:border-neon focus:ring-2 focus:ring-neon/20 outline-none"
-                          placeholder="email@example.com"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-light-gray mb-2">Bio</label>
-                        <textarea
-                          rows={4}
-                          value={profile.bio}
-                          onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                          className="w-full bg-olive/20 border border-olive/30 rounded-xl px-4 py-3 text-off-white focus:border-neon focus:ring-2 focus:ring-neon/20 outline-none"
-                          placeholder="Tell visitors about yourself..."
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-light-gray mb-2">GitHub Profile</label>
-                        <input
-                          type="url"
-                          value={profile.githubUrl}
-                          onChange={(e) => setProfile({ ...profile, githubUrl: e.target.value })}
-                          className="w-full bg-olive/20 border border-olive/30 rounded-xl px-4 py-3 text-off-white focus:border-neon focus:ring-2 focus:ring-neon/20 outline-none"
-                          placeholder="https://github.com/araf-Mahmud-2004"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-light-gray mb-2">LinkedIn Profile</label>
-                        <input
-                          type="url"
-                          value={profile.linkedinUrl}
-                          onChange={(e) => setProfile({ ...profile, linkedinUrl: e.target.value })}
-                          className="w-full bg-olive/20 border border-olive/30 rounded-xl px-4 py-3 text-off-white focus:border-neon focus:ring-2 focus:ring-neon/20 outline-none"
-                          placeholder="https://linkedin.com/in/username"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-4 mt-6">
-                      <button 
-                        onClick={handleProfileUpdate}
-                        className="bg-neon text-charcoal px-6 py-3 rounded-xl font-bold hover:bg-yellow-300 transition-colors"
-                      >
-                        Save Changes
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="bg-charcoal/50 backdrop-blur-xl rounded-2xl border border-olive/30 p-6">
-                    <h3 className="text-xl font-bold text-off-white mb-6">Profile Picture</h3>
-                    <div className="flex items-center gap-6">
-                      <div className="w-24 h-24 rounded-full bg-olive/20 flex items-center justify-center overflow-hidden">
-                        {profile.profilePictureUrl ? (
-                          <img 
-                            src={profile.profilePictureUrl} 
-                            alt="Profile" 
-                            className="w-full h-full object-cover rounded-full" 
-                          />
-                        ) : (
-                          <User className="w-12 h-12 text-muted-gray" />
-                        )}
-                      </div>
-                      <div>
-                        <label className="flex items-center gap-2 bg-neon text-charcoal px-4 py-2 rounded-xl font-bold hover:bg-yellow-300 transition-colors cursor-pointer">
-                          <Upload className="w-5 h-5" />
-                          Upload Photo
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            className="hidden" 
-                            onChange={handleProfilePictureUpload} 
-                          />
-                        </label>
-                        <p className="text-muted-gray text-sm mt-2">JPG, PNG or GIF. Max size 2MB</p>
-                      </div>
-                    </div>
-                  </div>
+              {/* Social Links Tab */}
+              {activeTab === 'social' && (
+                <motion.div
+                  key="social"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <SocialLinksManager />
                 </motion.div>
               )}
 

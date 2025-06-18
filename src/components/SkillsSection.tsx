@@ -11,8 +11,12 @@ import {
   Star,
   Award,
   CheckCircle,
+  Settings,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { useAdmin } from "../contexts/AdminContext";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 interface SkillsSectionProps {
   scrollY: number;
@@ -67,6 +71,11 @@ const SkillsSection: React.FC<SkillsSectionProps> = ({ scrollY }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hoveredSkill, setHoveredSkill] = useState<string | null>(null);
+  
+  // Navigation for admin access
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { showAdminButton } = useAdmin();
 
   // Fetch skills from Supabase
   useEffect(() => {
@@ -130,6 +139,16 @@ const SkillsSection: React.FC<SkillsSectionProps> = ({ scrollY }) => {
     fetchSkills();
   }, []);
 
+  // Admin functions
+  const handleAdminClick = () => {
+    if (!user) {
+      navigate('/admin/login');
+    } else {
+      navigate('/admin/dashboard');
+    }
+  };
+
+  
   // Memoize background particles to prevent re-renders
   const backgroundParticles = useMemo(
     () =>
@@ -233,7 +252,7 @@ const SkillsSection: React.FC<SkillsSectionProps> = ({ scrollY }) => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="text-center mb-16 relative"
         >
           <h2 className="text-4xl md:text-5xl font-bold text-off-white mb-4">
             Technical <span className="text-neon">Arsenal</span>
@@ -242,6 +261,20 @@ const SkillsSection: React.FC<SkillsSectionProps> = ({ scrollY }) => {
             A comprehensive toolkit for building modern, scalable web
             applications
           </p>
+          
+          {/* Admin Button - Only visible when VITE_SHOW_ADMIN=true */}
+          {showAdminButton && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              onClick={handleAdminClick}
+              className="absolute top-0 right-0 p-2 rounded-full bg-charcoal/50 border border-neon/30 hover:border-neon/60 hover:bg-charcoal/70 transition-all duration-300 group"
+              title={user ? "Admin Dashboard" : "Admin Login"}
+            >
+              <Settings className={`w-5 h-5 ${user ? 'text-neon' : 'text-muted-gray'} group-hover:text-neon transition-colors`} />
+            </motion.button>
+          )}
         </motion.div>
 
         {/* Loading State */}
@@ -361,6 +394,8 @@ const SkillsSection: React.FC<SkillsSectionProps> = ({ scrollY }) => {
           </div>
         )}
       </div>
+
+      {/* Login modal removed - admin access now goes directly to admin dashboard */}
     </section>
   );
 };

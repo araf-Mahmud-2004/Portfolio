@@ -6,44 +6,21 @@ const CustomCursor: React.FC = () => {
   const [isHovering, setIsHovering] = useState(false);
   const [isClicking, setIsClicking] = useState(false);
   const [isText, setIsText] = useState(false);
+  const mousePosition = useRef({ x: 0, y: 0 });
+  const followerPosition = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     let mouseX = 0;
     let mouseY = 0;
-    let followerX = 0;
-    let followerY = 0;
     let animationId: number;
 
-    // Force cursor override on all elements - NUCLEAR OPTION
+    // Simple cursor override
     const forceCursorOverride = () => {
-      const allElements = document.querySelectorAll('*');
-      allElements.forEach(element => {
-        const htmlElement = element as HTMLElement;
-        htmlElement.style.setProperty('cursor', 'none', 'important');
-      });
-      
-      // Also override on document and body
-      document.documentElement.style.setProperty('cursor', 'none', 'important');
-      document.body.style.setProperty('cursor', 'none', 'important');
+      document.documentElement.style.cursor = 'none';
+      document.body.style.cursor = 'none';
     };
 
-    // Initial override
     forceCursorOverride();
-
-    // Override cursor on new elements and style changes
-    const observer = new MutationObserver(() => {
-      forceCursorOverride();
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['style', 'class']
-    });
-
-    // Also override on interval as a backup
-    const intervalId = setInterval(forceCursorOverride, 100);
 
     const animate = () => {
       // Update cursor position immediately
@@ -54,12 +31,12 @@ const CustomCursor: React.FC = () => {
 
       // Smooth following animation for the ring
       const speed = 0.12;
-      followerX += (mouseX - followerX) * speed;
-      followerY += (mouseY - followerY) * speed;
+      followerPosition.current.x += (mouseX - followerPosition.current.x) * speed;
+      followerPosition.current.y += (mouseY - followerPosition.current.y) * speed;
 
       if (followerRef.current) {
-        followerRef.current.style.left = `${followerX}px`;
-        followerRef.current.style.top = `${followerY}px`;
+        followerRef.current.style.left = `${followerPosition.current.x}px`;
+        followerRef.current.style.top = `${followerPosition.current.y}px`;
       }
 
       animationId = requestAnimationFrame(animate);
@@ -68,60 +45,50 @@ const CustomCursor: React.FC = () => {
     const handleMouseMove = (e: MouseEvent) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
+      mousePosition.current = { x: e.clientX, y: e.clientY };
+      
+      // Initialize follower position on first mouse move if not set
+      if (followerPosition.current.x === 0 && followerPosition.current.y === 0) {
+        followerPosition.current = { x: e.clientX, y: e.clientY };
+      }
     };
 
+    // Simple scroll handler that only checks on scroll
+    const handleScroll = () => {
+      const element = document.elementFromPoint(mousePosition.current.x, mousePosition.current.y) as HTMLElement;
+      if (!element) return;
+
+      // Only check for very specific interactive elements
+      const isButton = element.tagName === 'BUTTON' || element.closest('button');
+      const isLink = element.tagName === 'A' || element.closest('a');
+      
+      if (isButton || isLink) {
+        if (!isHovering) setIsHovering(true);
+        if (isText) setIsText(false);
+      } else {
+        if (isHovering) setIsHovering(false);
+        if (isText) setIsText(false);
+      }
+    };
+
+    // Only handle specific hover events
     const handleMouseEnter = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       
-      // Check for interactive elements
-      if (
-        target.tagName === 'A' ||
-        target.tagName === 'BUTTON' ||
-        target.getAttribute('role') === 'button' ||
-        target.classList.contains('cursor-hover') ||
-        target.closest('a') ||
-        target.closest('button')
-      ) {
+      if (target.tagName === 'BUTTON' || target.closest('button')) {
         setIsHovering(true);
         setIsText(false);
-      }
-      // Check for text elements
-      else if (
-        target.tagName === 'P' ||
-        target.tagName === 'SPAN' ||
-        target.tagName === 'H1' ||
-        target.tagName === 'H2' ||
-        target.tagName === 'H3' ||
-        target.tagName === 'H4' ||
-        target.tagName === 'H5' ||
-        target.tagName === 'H6' ||
-        target.classList.contains('cursor-text')
-      ) {
-        setIsText(true);
-        setIsHovering(false);
+      } else if (target.tagName === 'A' || target.closest('a')) {
+        setIsHovering(true);
+        setIsText(false);
       }
     };
 
     const handleMouseLeave = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       
-      if (
-        target.tagName === 'A' ||
-        target.tagName === 'BUTTON' ||
-        target.getAttribute('role') === 'button' ||
-        target.classList.contains('cursor-hover') ||
-        target.closest('a') ||
-        target.closest('button') ||
-        target.tagName === 'P' ||
-        target.tagName === 'SPAN' ||
-        target.tagName === 'H1' ||
-        target.tagName === 'H2' ||
-        target.tagName === 'H3' ||
-        target.tagName === 'H4' ||
-        target.tagName === 'H5' ||
-        target.tagName === 'H6' ||
-        target.classList.contains('cursor-text')
-      ) {
+      if (target.tagName === 'BUTTON' || target.closest('button') || 
+          target.tagName === 'A' || target.closest('a')) {
         setIsHovering(false);
         setIsText(false);
       }
@@ -136,32 +103,31 @@ const CustomCursor: React.FC = () => {
     };
 
     // Add event listeners
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseenter', handleMouseEnter, true);
-    document.addEventListener('mouseleave', handleMouseLeave, true);
+    document.addEventListener('mousemove', handleMouseMove, { passive: true });
+    document.addEventListener('scroll', handleScroll, { passive: true });
     document.addEventListener('mousedown', handleMouseDown);
     document.addEventListener('mouseup', handleMouseUp);
+    
+    // Only listen for buttons and links
+    document.addEventListener('mouseenter', handleMouseEnter, true);
+    document.addEventListener('mouseleave', handleMouseLeave, true);
 
-    // Start the animation loop
+    // Start animation
     animate();
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseenter', handleMouseEnter, true);
-      document.removeEventListener('mouseleave', handleMouseLeave, true);
+      document.removeEventListener('scroll', handleScroll);
       document.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mouseenter', handleMouseEnter, true);
+      document.removeEventListener('mouseleave', handleMouseLeave, true);
       
-      // Cancel animation frame
       if (animationId) {
         cancelAnimationFrame(animationId);
       }
-      
-      // Clean up observer and interval
-      observer.disconnect();
-      clearInterval(intervalId);
     };
-  }, []);
+  }, []); // Removed dependencies to prevent re-initialization
 
   return (
     <>

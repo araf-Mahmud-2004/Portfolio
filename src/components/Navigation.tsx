@@ -70,14 +70,7 @@ const Navigation: React.FC = () => {
             >
               Contact
             </button>
-            <button
-              onClick={handleAdminClick}
-              className="text-muted-gray hover:text-neon transition-colors duration-200 flex items-center"
-              title={user ? 'Admin Dashboard' : 'Admin Login'}
-              aria-label="Admin"
-            >
-              <User size={20} />
-            </button>
+            {/* User icon hidden - admin access moved to skills section */}
           </div>
 
           {/* Mobile menu button */}
@@ -117,12 +110,7 @@ const Navigation: React.FC = () => {
               >
                 Contact
               </button>
-              <button
-                onClick={handleAdminClick}
-                className="text-left text-muted-gray hover:text-neon transition-colors duration-200 w-full text-left"
-              >
-                {user ? 'Admin Dashboard' : 'Admin Login'}
-              </button>
+              {/* Admin access hidden from mobile menu - moved to skills section */}
             </div>
           </div>
         )}

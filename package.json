@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:optimized": "node scripts/build-optimized.js",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "analyze": "npm run build && npx vite-bundle-analyzer"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.0",
